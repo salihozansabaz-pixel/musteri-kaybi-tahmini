@@ -1,85 +1,80 @@
 # E-Ticarette Müşteri Kaybı Tahmini
 
-E-ticaret müşterilerinin müşteri kaybı (`Churn`) durumunu tahmin etmek için **Logistic Regression** ve **Random Forest** modellerini karşılaştıran Python projesi. Veri hazırlama, model eğitimi ve iki farklı doğrulama yöntemiyle performans değerlendirmesi içerir.
+E-ticaret müşterilerinin müşteri kaybı (`Churn`) durumunu tahmin etmek için **Logistic Regression** ve **Random Forest** modellerini karşılaştıran Python projesi. Veri hazırlama, grup bazlı veri bölme, çapraz doğrulama ve bağımsız hold-out değerlendirmesi içerir. Çoğunluk sınıfını tahmin eden `DummyClassifier`, referans modeldir.
 
-## Amaç
+## Doğrulanmış sonuçlar
 
-Müşteri davranışlarını ve alışveriş özelliklerini kullanarak müşteri kaybını sınıflandırmak, iki modelin başarısını karşılaştırmak ve sınıflandırma metriklerini yorumlamak. Proje eğitim ve model karşılaştırması amacıyla hazırlanmıştır.
+6 Ekim 2026 tarihinde Python 3.13.14 ve `requirements.txt` içindeki sürümlerle çalıştırılmıştır. Pozitif sınıf `Churn=1`'dir. Modeller varsayılan sınıflandırma eşikleriyle değerlendirilmiştir; hiperparametre veya eşik optimizasyonu yapılmamıştır.
 
-## Kullanılan teknolojiler
+| Model | Test accuracy | Test precision | Test recall | Test F1 | Eğitim CV F1 (ortalama ± std) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Dummy (çoğunluk) | %83,13 | %0,00 | %0,00 | %0,00 | %0,00 ± 0,00 |
+| Logistic Regression | %87,74 | %70,63 | %46,84 | %56,33 | %63,60 ± 5,33 |
+| Random Forest | %94,40 | %92,05 | %73,16 | %81,52 | %79,58 ± 3,34 |
 
-- Python
-- pandas ve NumPy
-- scikit-learn
-- Matplotlib ve Seaborn
+CV standart sapmaları yüzde puanı cinsindendir; güven aralığı değildir. Test kümesinde 1.126 kayıt ve 190 pozitif örnek vardır. Random Forest 139 pozitif örneği yakalar, 51'ini kaçırır; 12 yanlış pozitif tahmin yapar. Bu sonuç, yalnızca accuracy değerinin yeterli olmadığını gösterir: sürekli `0` tahmin eden referans model bile %83,13 doğruluk elde eder.
+
+Tam metrikler, karmaşıklık matrisleri ve veri bölme özeti [`evaluation_results.json`](evaluation_results.json) dosyasındadır. Matrislerde satırlar gerçek, sütunlar tahmin edilen sınıflardır; sıra `[0, 1]`'dir.
+
+## Veri ve doğrulama yöntemi
+
+- Veri dosyası 5.630 satır, hedef ve kimlik dahil 20 sütun içerir; 948 satırda `Churn=1`'dir.
+- `CustomerID` ve `Churn` çıkarıldıktan sonra 18 özellik kalır. Özelliklerde toplam 1.856 eksik hücre bulunur. Dosya adında “temizlenmiş” yazması eksik değer bulunmadığı anlamına gelmez.
+- Giriş cihazı, ödeme yöntemi ve ürün kategorisindeki eş anlamlı etiketler sabit kurallarla birleştirilir. Bu işlem veriden istatistik öğrenmez.
+- Kimlik hariç ham veride 556 tekrar kayıt vardır. Kategori adları birleştirildikten sonra hedef ve kimlik hariç 557 tekrar profil bulunur. Bunların gerçek hayatta aynı müşteri olduğu varsayılmaz; kayıtlar silinmez.
+- Aynı özelliklere ve eksik değer desenine sahip profiller, hedef etiket kullanılmadan gruplanır. Bir profilin eğitim ve değerlendirme bölümlerine dağılması engellenir.
+- `StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)` ilk dış katı hold-out olarak ayırır. Bu veride 4.504 eğitim, 1.126 test kaydı oluşur. Grup kısıtı nedeniyle oranlar her veri setinde tam %80/%20 olmak zorunda değildir.
+- Beş katlı iç çapraz doğrulama yalnızca eğitim bölümünde çalışır ve profil gruplarını korur. Hold-out verisi ön işleme öğreniminde ve çapraz doğrulamada kullanılmaz.
+- Her modelin `Pipeline` yapısında sayısal eksikler eğitim medyanıyla, kategorik eksikler eğitim moduyla doldurulur. Sayısal özellikler `StandardScaler`, kategorik özellikler `OneHotEncoder(handle_unknown='ignore')` ile dönüştürülür.
+- Eğitim/test ve iç CV bölümleri arasında ortak profil olmadığı, her bölümde iki sınıfın da bulunduğu kod içinde kontrol edilir. Eksik hedef veya tekrar eden müşteri kimliği sessizce düzeltilmek yerine hata üretir.
+
+Logistic Regression `max_iter=2000`, Random Forest `n_estimators=100` kullanır. Rastgelelik içeren model ve bölmelerde `random_state=42` sabittir.
+
+## Kurulum ve çalıştırma
+
+Python 3.11 veya üstünü kullanın; doğrulama Python 3.13.14 ile yapılmıştır. Terminali proje klasöründe açın.
+
+Windows PowerShell:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe "veri_dersi_müşteri_kaybı.py" --no-plots
+.\.venv\Scripts\python.exe -W error -m unittest -v test_churn.py
+```
+
+macOS / Linux:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python "veri_dersi_müşteri_kaybı.py" --no-plots
+.venv/bin/python -W error -m unittest -v test_churn.py
+```
+
+Grafik pencerelerini görmek için `--no-plots` seçeneğini kaldırın. Program grafik penceresinde beklerse devam etmek için pencereyi kapatın. Grafik modu masaüstü grafik desteği gerektirir; otomatik doğrulama grafik açmadan yapılmıştır.
+
+CSV, Python dosyasının yanından okunur; programı farklı bir çalışma klasöründen de çağırabilirsiniz. Sonuçlar varsayılan olarak proje içindeki `evaluation_results.json` dosyasına yazılır ve önceki sonuçların üzerine yazılır. Başka bir konum için `--output sonuc.json` kullanın. Eğitilmiş modeller diske kaydedilmez.
 
 ## Dosyalar
 
 | Dosya | Açıklama |
 | --- | --- |
-| `veri_dersi_müşteri_kaybı.py` | Veri hazırlama, eğitim, değerlendirme ve grafikler |
-| `e_commerce_dataset_temizlenmis.csv` | Kodun kullandığı veri dosyası |
-| `requirements.txt` | Python bağımlılıkları |
-| `.gitignore` | Yerel ortam ve geçici dosyalar için Git hariç tutma kuralları |
+| `veri_dersi_müşteri_kaybı.py` | Ön işleme, grup bazlı bölme, model eğitimi ve değerlendirme |
+| `e_commerce_dataset_temizlenmis.csv` | Girdi verisi |
+| `evaluation_results.json` | Doğrulanmış çalıştırmanın metrikleri |
+| `test_churn.py` | Bölmelerin ayrılığı, eğitimle sınırlı ön işleme ve geçersiz veri testleri |
+| `requirements.txt` | Doğrulamada kullanılan sabit bağımlılık sürümleri |
+| `.gitignore` | Yerel ortam ve geçici dosyalar için hariç tutma kuralları |
 
-## Veri seti
+## Yapılan doğrulama ve düzeltmeler
 
-Hedef sütun `Churn`, müşteri tanımlayıcı sütunu `CustomerID`'dir. Veri dosyasında müşteri kıdemi (`Tenure`), giriş cihazı, ödeme yöntemi, tercih edilen ürün kategorisi, memnuniyet puanı, şikâyet durumu, sipariş sayısı ve son siparişten bu yana geçen süre gibi alanlar bulunur.
+Önceki sürüm çalıştırıldığında Random Forest yaklaşık %98 test doğruluğu veriyordu. Ancak eski rastgele test bölmesindeki 189 kaydın eğitim verisinde aynı özelliklere sahip karşılığı vardı; medyan doldurma da veri bölünmeden önce uygulanıyordu. Bunlar değerlendirmeyi iyimser yapabilir. Ön işleme eğitim katlarına taşındı, tekrar profiller aynı bölmede tutuldu, kategorik kodlama ve ölçekleme düzeltildi, referans model eklendi.
 
-`CustomerID` model girdilerinden çıkarılır. Veri setinin özgün kaynak ve lisans bilgileri proje dosyalarında belirtilmemiştir.
+Yeni sürüm `python -W error veri_dersi_müşteri_kaybı.py --no-plots` ile uyarılar hata sayılarak başarıyla çalıştırıldı. Dört regresyon testi geçti. Eski ve yeni sonuçlarda veri bölmesi ve ön işleme birlikte değiştiği için farkın tamamı tek bir düzeltmeye atfedilemez.
 
-## Çalışma akışı
+## Sınırlamalar
 
-1. CSV dosyası okunur.
-2. Aynı kategoriyi ifade eden bazı değerler birleştirilir: `Phone` → `Mobile Phone`, `CC` → `Credit Card`, `COD` → `Cash on Delivery` ve ürün kategorisindeki `Mobile` → `Mobile Phone`.
-3. Eksik değer içeren sütunlar kendi medyanlarıyla doldurulur.
-4. `CustomerID` kaldırılır; metin sütunları `LabelEncoder` ile sayısallaştırılır.
-5. Veriler %80 eğitim, %20 test olarak ayrılır (`random_state=42`).
-6. Logistic Regression (`max_iter=2000`) ve Random Forest (`n_estimators=100`, `random_state=42`) eğitilir.
-7. Test sonuçları ve karmaşıklık matrisleri gösterilir.
-8. Her iki model 5 katlı, karıştırılmış `KFold` ile ayrıca değerlendirilir.
+Bu veri üzerinde Random Forest, referans ve Logistic Regression modellerinden daha iyi sonuç vermektedir. Bu, başka müşterilerde veya gelecekte aynı başarıyı garanti etmez. Kaynak ve lisans bilgileri proje dosyalarında belirtilmemiştir; özelliklerin müşteri kaybından önce ölçüldüğü de doğrulanmamıştır. Zamana dayalı veya dış veriyle doğrulama yapılmamıştır. Profil gruplama tam eşleşmeleri kontrol eder; benzer fakat eşit olmayan kayıtların bağımsızlığını kanıtlamaz.
 
-## Kurulum ve çalıştırma
-
-Terminali proje klasöründe açın. Python ve pip kurulu olmalıdır. Windows PowerShell için:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe "veri_dersi_müşteri_kaybı.py"
-```
-
-macOS / Linux için:
-
-```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python "veri_dersi_müşteri_kaybı.py"
-```
-
-CSV dosyasını Python dosyasıyla aynı klasörde tutun ve komutu bu klasörden çalıştırın. Grafiklerin gösterilebilmesi için grafik arayüzünü destekleyen bir Python ortamı gerekir. Program grafik penceresinde beklerse devam etmek için pencereyi kapatın.
-
-## Çıktılar ve değerlendirme
-
-Her model için terminalde şu metrikler yazdırılır:
-
-| Metrik | Ne anlatır? |
-| --- | --- |
-| Accuracy | Tüm tahminlerin ne kadarının doğru olduğu |
-| Precision | Pozitif tahminlerin ne kadarının gerçekten pozitif olduğu |
-| Recall | Gerçek pozitiflerin ne kadarının yakalandığı |
-| F1-score | Precision ve recall'un harmonik ortalaması |
-
-Hold-out değerlendirmesinde her model için bir karmaşıklık matrisi açılır. Çapraz doğrulamada ise beş katın ortalama metrikleri yazdırılır. Sonuçlar iki ondalık basamakla gösterilir; model veya rapor dosyası otomatik kaydedilmez.
-
-Bu README'ye doğrulanmış bir çalışma çıktısı eklenmediğinden sayısal başarı iddiası verilmemiştir. Sonuçları kendi ortamınızda kodu çalıştırarak elde edebilirsiniz. Bağımlılık sürümleri sabitlenmediği için ortamlar arasında sonuç farkları oluşabilir.
-
-## Yöntemin sınırlamaları
-
-- Eksik değer doldurma ve kategorik kodlama veri bölünmeden önce yapılır. Özellikle medyanların tüm veriden hesaplanması değerlendirmeye bilgi sızmasına yol açabilir. Daha sağlam bir değerlendirmede ön işleme her eğitim bölümü içinde öğrenilmelidir.
-- `LabelEncoder`, kategoriler arasında sayısal bir sıralama oluşturur. Özellikle Logistic Regression için sırasız kategorilerde one-hot kodlama tercih edilebilir.
-- Logistic Regression öncesinde sayısal özellikler ölçeklenmez.
-- Hold-out bölmesinde `stratify` kullanılmaz; çapraz doğrulama `StratifiedKFold` yerine `KFold` kullanır. Sınıf oranlarının korunması garanti edilmez.
-- Çapraz doğrulama tüm veri üzerinde yapılır; hold-out sonuçlarından tamamen bağımsız ikinci bir deney olarak yorumlanmamalıdır.
-
-Mevcut çalışma bir eğitim projesidir; üretim ortamına hazır bir müşteri karar sistemi olarak değerlendirilmemelidir.
+Proje eğitim ve model karşılaştırması için uygundur. Gerçek kullanım öncesinde veri kaynağı, zaman ilişkisi, hata maliyetleri ve dış veri başarısı ayrıca değerlendirilmelidir.

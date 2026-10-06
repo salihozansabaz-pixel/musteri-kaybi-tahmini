@@ -1,0 +1,125 @@
+{
+  "data": {
+    "rows": 5630,
+    "features": 18,
+    "positive_rows": 948,
+    "missing_cells": 1856,
+    "repeated_profiles": 557,
+    "train_rows": 4504,
+    "test_rows": 1126,
+    "train_positive_rows": 758,
+    "test_positive_rows": 190,
+    "shared_train_test_profiles": 0,
+    "method": "StratifiedGroupKFold: first outer fold hold-out; five inner folds on training only"
+  },
+  "models": {
+    "Dummy (majority)": {
+      "holdout": {
+        "accuracy": 0.8312611012433393,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "confusion_matrix": [
+        [
+          936,
+          0
+        ],
+        [
+          190,
+          0
+        ]
+      ],
+      "cv_train": {
+        "accuracy": {
+          "mean": 0.8317052657541005,
+          "std": 0.0005015828395100942
+        },
+        "precision": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "recall": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "f1": {
+          "mean": 0.0,
+          "std": 0.0
+        }
+      }
+    },
+    "Logistic Regression": {
+      "holdout": {
+        "accuracy": 0.8774422735346359,
+        "precision": 0.7063492063492064,
+        "recall": 0.46842105263157896,
+        "f1": 0.5632911392405063
+      },
+      "confusion_matrix": [
+        [
+          899,
+          37
+        ],
+        [
+          101,
+          89
+        ]
+      ],
+      "cv_train": {
+        "accuracy": {
+          "mean": 0.8969776791219634,
+          "std": 0.011926918957791244
+        },
+        "precision": {
+          "mean": 0.7787576458798122,
+          "std": 0.02817803927281224
+        },
+        "recall": {
+          "mean": 0.5394562565353782,
+          "std": 0.06665377550618938
+        },
+        "f1": {
+          "mean": 0.6360340055032168,
+          "std": 0.05334718719742541
+        }
+      }
+    },
+    "Random Forest": {
+      "holdout": {
+        "accuracy": 0.9440497335701599,
+        "precision": 0.9205298013245033,
+        "recall": 0.7315789473684211,
+        "f1": 0.8152492668621701
+      },
+      "confusion_matrix": [
+        [
+          924,
+          12
+        ],
+        [
+          51,
+          139
+        ]
+      ],
+      "cv_train": {
+        "accuracy": {
+          "mean": 0.9391629054137377,
+          "std": 0.008277524092214767
+        },
+        "precision": {
+          "mean": 0.9104290392649439,
+          "std": 0.01853289075703425
+        },
+        "recall": {
+          "mean": 0.7083652840711049,
+          "std": 0.050685559631395635
+        },
+        "f1": {
+          "mean": 0.7957559011395844,
+          "std": 0.03340222682608708
+        }
+      }
+    }
+  }
+}
