@@ -1,0 +1,3 @@
+CustomerID,Tenure,PreferredLoginDevice,CityTier,WarehouseToHome,PreferredPaymentMode,Gender,HourSpendOnApp,NumberOfDeviceRegistered,PreferedOrderCat,SatisfactionScore,MaritalStatus,NumberOfAddress,Complain,OrderAmountHikeFromlastYear,CouponUsed,OrderCount,DaySinceLastOrder,CashbackAmount
+DEMO-001,8,Phone,2,12,CC,Male,2,2,Mobile,3,Single,2,0,12,1,3,4,150
+DEMO-002,2,Computer,1,20,Debit Card,Female,3,3,Laptop & Accessory,2,Married,3,1,15,2,2,8,180

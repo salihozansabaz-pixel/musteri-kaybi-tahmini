@@ -1,0 +1,35 @@
+name: Tests and model smoke test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MPLBACKEND: Agg
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-lock.txt
+      - name: Install dependencies
+        run: python -m pip install -r requirements-lock.txt
+      - name: Regression and inference tests
+        run: python -W error -m unittest -v test_churn.py
+      - name: Train, evaluate, and save pipeline
+        run: python -W error train.py --no-plots --output artifacts/ci_results.json --figure-dir artifacts/figures
+      - name: Predict synthetic example customers
+        run: python -W error predict.py --input examples/customers.csv
